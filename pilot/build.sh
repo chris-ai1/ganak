@@ -8,7 +8,7 @@ while read -r name url rev; do
   git -C "$dir" submodule update --init --recursive --depth 1
   opts+=("-DFETCHCONTENT_SOURCE_DIR_${name^^}=$dir")
 done < pilot/deps.txt
-cmake -S solver -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF "${opts[@]}"
+cmake -S solver -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF "-DCMAKE_CXX_STANDARD_LIBRARIES=-lflint -lmpfr -lgmpxx -lgmp" "${opts[@]}"
 cmake --build build --parallel 4 --target ganak-bin
 mkdir pkg
 cp build/ganak pkg/
