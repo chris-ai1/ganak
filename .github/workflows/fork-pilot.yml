@@ -1,0 +1,86 @@
+name: One-hour Ganak benchmark pilot
+on:
+  push:
+    branches: [benchmarks/actions-one-hour]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.repository == 'chris-ai1/ganak'
+    runs-on: ubuntu-24.04
+    outputs:
+      cases: ${{ steps.select.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: select
+        run: |
+          set -eu
+          echo "cases=$(jq -c 'keys' pilot/cases.json)" >> "$GITHUB_OUTPUT"
+          curl -fLsS --retry 3 https://zenodo.org/records/14249068/files/mc2024-track1-mc_competition.tar -o "$RUNNER_TEMP/2024.tar"
+          curl -fLsS --retry 3 -u 'STzdpXNgZDZaPRo:' https://nextcloud.liu.se/public.php/webdav/mc2026_track1_public.tar -o "$RUNNER_TEMP/2026.tar"
+          mkdir inputs
+          for year in 2024 2026; do
+            mkdir "$RUNNER_TEMP/$year"
+            tar xf "$RUNNER_TEMP/$year.tar" -C "$RUNNER_TEMP/$year"
+            for key in $(jq -r 'keys[]' pilot/cases.json | grep "^mc$year"); do
+              cp "$(find "$RUNNER_TEMP/$year" -name "$key.cnf.xz")" inputs/
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pilot-inputs
+          path: inputs/
+  build:
+    if: github.repository == 'chris-ai1/ganak'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {mode: stock, ref: f262be5374f312b4bf7c99c6cca26e51182158e5}
+          - {mode: previous, ref: cfb2f69790dba7de79d383d38d6add524ae58673}
+          - {mode: pushed, ref: 926aef1fc0b2c9c0c443888d919bc8cdc7a94bf2}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+          path: solver
+      - run: sudo apt-get update -qq && sudo apt-get install -y libflint-dev libgmp-dev libmpfr-dev help2man ninja-build
+      - run: bash pilot/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.mode }}
+          path: solver.tgz
+  benchmark:
+    needs: [build, prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 200
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        case: ${{ fromJSON(needs.prepare.outputs.cases) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: pilot-inputs
+          path: inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: packages
+      - run: |
+          for mode in stock previous pushed; do
+            mkdir "$mode"
+            tar xf "packages/build-$mode/solver.tgz" -C "$mode"
+          done
+          lscpu
+          python3 pilot/run.py "${{ matrix.case }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.case }}
+          path: ${{ matrix.case }}.csv
+          if-no-files-found: error

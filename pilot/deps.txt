@@ -1,0 +1,7 @@
+approxmc https://github.com/meelgroup/ApproxMC.git aae0b47038d9ab52f2e4cc7f466cafb7219d8812
+arjun https://github.com/meelgroup/arjun.git c86963a05108092cba6fa10e35403053bd175e4d
+cadiback https://github.com/meelgroup/cadiback 802e1f6d34b6e613828e591a8359298cd99e6429
+cadical https://github.com/meelgroup/cadical 818c9562f114b315a9246ced943b66b60b38e8fb
+cryptominisat5 https://github.com/msoos/cryptominisat 97c6efeae45d93c45d2ebc3e4e83c2014c79513d
+sbva https://github.com/meelgroup/SBVA.git bf157b1fea71c155251d2991b5fe0de37c57efba
+treedecomp https://github.com/meelgroup/treedecomp.git 0495b40c220b0b97a0d7c8e8d86480b4060476a8
