@@ -15,6 +15,7 @@ jobs:
       - id: select
         run: |
           set -eu
+          jq -e "length == 20" pilot/cases.json >/dev/null
           echo "cases=$(jq -c 'keys' pilot/cases.json)" >> "$GITHUB_OUTPUT"
           curl -fLsS --retry 3 https://zenodo.org/records/14249068/files/mc2024-track1-mc_competition.tar -o "$RUNNER_TEMP/2024.tar"
           curl -fLsS --retry 3 -u 'STzdpXNgZDZaPRo:' https://nextcloud.liu.se/public.php/webdav/mc2026_track1_public.tar -o "$RUNNER_TEMP/2026.tar"
@@ -30,6 +31,7 @@ jobs:
         with:
           name: pilot-inputs
           path: inputs/
+          if-no-files-found: error
   build:
     if: github.repository == 'chris-ai1/ganak'
     runs-on: ubuntu-24.04
